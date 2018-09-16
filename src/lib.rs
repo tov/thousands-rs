@@ -1,86 +1,77 @@
-//! Provides a type, [Separated](struct.Separated.html) for printing numbers with
-//!
-//! digits, but can be configured via a [SeparatorPolicy](struct.SeparatorPolicy.html).
+//! Provides a trait, [Separable](trait.Separable.html) for formatting numbers with
+//! separators between the digits. Typically this will be used to add commas or spaces
+//! every three digits from the right, but can be configured via a
+//! [SeparatorPolicy](struct.SeparatorPolicy.html).
 
-use std::fmt::{Display, Formatter, Write, Result};
+use std::fmt::Display;
 
-/// Wrapper struct for printing numbers with separators.
-///
-/// # Examples
-///
-/// ```rust
-///
-/// ```
-#[derive(Clone)]
-pub struct Separated<'a, T> {
-    value:  T,
-    policy: SeparatorPolicy<'a>,
-}
-
-impl<'a, T> Separated<'a, T> {
-    /// Creates a wrapper object for printing the given value using the given
-    /// separator policy.
-    pub fn with_policy(value: T, policy: SeparatorPolicy<'a>) -> Self {
-        Separated { value, policy }
-    }
-
-    /// Creates a wrapper object for printing the given value with a comma
-    /// every three digits (from the right). This is equivalent to
+/// Provides methods for formatting numbers with separators between the digits.
+pub trait Separable {
+    /// Inserts a comma every three digits from the right.
     ///
-    /// ```
-    /// Separated::with_policy(value, COMMA_SEPARATOR_POLICY)
-    /// ```
+    /// This is equivalent to `self.separate_by_policy(COMMA_SEPARATOR_POLICY)`.
     ///
     /// # Examples
     ///
     /// ```
-    /// assert_eq!( Separated::commas(1234567).to_string(),
-    ///             "1,234,567" );
+    /// # use thousands::*;
+    /// assert_eq!( 12345.separate_with_commas(), "12,345" );
     /// ```
-    pub fn commas(value: T) -> Self {
-        Separated::with_policy(value, COMMA_SEPARATOR_POLICY)
+    fn separate_with_commas(&self) -> String {
+        self.separate_by_policy(COMMA_SEPARATOR_POLICY)
     }
 
-    /// Creates a wrapper object for printing the given value with a space
-    /// every three digits (from the right). This is equivalent to
+    /// Inserts a space every three digits from the right.
     ///
-    /// ```
-    /// Separated::with_policy(value, SPACE_SEPARATOR_POLICY)
-    /// ```
+    /// This is equivalent to `self.separate_by_policy(SPACE_SEPARATOR_POLICY)`.
     ///
     /// # Examples
     ///
     /// ```
-    /// assert_eq!( Separated::spaces(1234567).to_string(),
-    ///             "1 234 567" );
+    /// # use thousands::*;
+    /// assert_eq!( 12345.separate_with_spaces(), "12 345" );
     /// ```
-    pub fn spaces(value: T) -> Self {
-        Separated::with_policy(value, SPACE_SEPARATOR_POLICY)
+    fn separate_with_spaces(&self) -> String {
+        self.separate_by_policy(SPACE_SEPARATOR_POLICY)
     }
 
-    /// Extracts the wrapped value.
-    pub fn into_inner(self) -> T {
-        self.value
+    /// Inserts a period every three digits from the right.
+    ///
+    /// This is equivalent to `self.separate_by_policy(DOT_SEPARATOR_POLICY)`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use thousands::*;
+    /// assert_eq!( 12345.separate_with_dots(), "12.345" );
+    /// ```
+    fn separate_with_dots(&self) -> String {
+        self.separate_by_policy(DOT_SEPARATOR_POLICY)
+    }
+
+    fn separate_by_policy(&self, policy: SeparatorPolicy) -> String;
+}
+
+impl<T: Display> Separable for T {
+    fn separate_by_policy(&self, policy: SeparatorPolicy) -> String {
+        let original = self.to_string();
+        let (before, number, after) = find_span(&original, |c| policy.digits.contains(&c));
+        let formatted = insert_separator_rev(number, policy.separator, policy.groups);
+
+        // Guessing the required size, but this will only be correct all characters in
+        // `formatted` are one byte in UTF-8.
+        let mut result = String::with_capacity(before.len() + formatted.len() + after.len());
+
+        result.extend(before.chars());
+        result.extend(formatted.into_iter().rev());
+        result.extend(after.chars());
+
+        result
     }
 }
 
-impl<'a, T: Display> Display for Separated<'a, T> {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        let original = self.value.to_string();
-        let (before, number, after) = find_span(&original, |c| self.policy.digits.contains(&c));
-        let formatted = insert_separator(number, self.policy.separator, self.policy.groups);
-
-        f.write_str(before)?;
-        for c in formatted.into_iter() {
-            f.write_char(c)?;
-        }
-        f.write_str(after)?;
-
-        Ok(())
-    }
-}
-
-fn insert_separator(number: &str, sep: char, mut groups: &[u8]) -> Vec<char> {
+fn insert_separator_rev(number: &str, sep: char, mut groups: &[u8]) -> Vec<char> {
+    // Does guessing the size like on the next line make sense?
     let mut buffer  = Vec::with_capacity(2 * number.len());
     let mut counter = 0;
 
@@ -97,8 +88,6 @@ fn insert_separator(number: &str, sep: char, mut groups: &[u8]) -> Vec<char> {
         counter += 1;
         buffer.push(c);
     }
-
-    buffer.reverse();
 
     buffer
 }
@@ -121,7 +110,9 @@ fn find_span<F>(s: &str, is_digit: F) -> (&str, &str, &str) where F: Fn(char) ->
     (&s[.. start], &s[start .. stop], &s[stop ..])
 }
 
-/// A policy for inserting separators into numbers. The configurable aspects are:
+/// A policy for inserting separators into numbers.
+///
+/// The configurable aspects are:
 ///
 ///   - The separator character to insert.
 ///
@@ -174,6 +165,13 @@ pub const SPACE_SEPARATOR_POLICY: SeparatorPolicy<'static> = SeparatorPolicy {
     digits:     ASCII_DECIMAL_DIGITS,
 };
 
+/// Policy for placing a period every three decimal digits.
+pub const DOT_SEPARATOR_POLICY: SeparatorPolicy<'static> = SeparatorPolicy {
+    separator:  '.',
+    groups:     &[3],
+    digits:     ASCII_DECIMAL_DIGITS,
+};
+
 /// Policy for placing a space every four hexadecimal digits.
 pub const HEX_FOUR_POLICY: SeparatorPolicy<'static> = SeparatorPolicy {
     separator:  ' ',
@@ -187,7 +185,7 @@ mod test {
 
     #[test]
     fn integer_thousands_commas() {
-        assert_eq!( Separated::commas(12345).to_string(),
+        assert_eq!( 12345.separate_with_commas(),
                     "12,345" );
     }
 
@@ -199,19 +197,19 @@ mod test {
             digits:    &ASCII_DECIMAL_DIGITS,
         };
 
-        assert_eq!( Separated::with_policy(1234567890, policy).to_string(),
+        assert_eq!( 1234567890.separate_by_policy(policy),
                     "1,23,45,67,890" );
     }
 
     #[test]
     fn minus_sign_and_decimal_point() {
-        assert_eq!( Separated::commas(-1234.5).to_string(),
+        assert_eq!( (-1234.5).separate_with_commas(),
                     "-1,234.5" );
     }
 
     #[test]
     fn hex_four() {
-        assert_eq!( Separated::with_policy("deadbeef", HEX_FOUR_POLICY).to_string(),
+        assert_eq!( "deadbeef".separate_by_policy(HEX_FOUR_POLICY),
                     "dead beef" );
     }
 }
