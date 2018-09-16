@@ -111,9 +111,9 @@ impl<T: Display> Separable for T {
         // `formatted` are one byte in UTF-8.
         let mut result = String::with_capacity(before.len() + formatted.len() + after.len());
 
-        result.extend(before.chars());
+        result.push_str(before);
         result.extend(formatted.into_iter().rev());
-        result.extend(after.chars());
+        result.push_str(after);
 
         result
     }
@@ -194,44 +194,45 @@ pub struct SeparatorPolicy<'a> {
 /// These are used for constructing [SeparatorPolicy](struct.SeparatorPolicy.html)s.
 pub mod digits {
     /// The decimal digits, in ASCII.
-    pub const ASCII_DECIMAL: &'static [char] = &[
+    pub const ASCII_DECIMAL: &[char] = &[
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
     ];
 
     /// The hexadecimal digits, in ASCII.
-    pub const ASCII_HEX: &'static [char] = &[
+    pub const ASCII_HEX: &[char] = &[
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
         'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F',
     ];
 }
 
+/// Predefined policies.
 pub mod policies {
     use super::*;
     use super::digits::*;
 
     /// Policy for placing a comma every three decimal digits.
-    pub const COMMA_SEPARATOR: SeparatorPolicy<'static> = SeparatorPolicy {
+    pub const COMMA_SEPARATOR: SeparatorPolicy = SeparatorPolicy {
         separator:  ',',
         groups:     &[3],
         digits:     ASCII_DECIMAL,
     };
 
     /// Policy for placing a space every three decimal digits.
-    pub const SPACE_SEPARATOR: SeparatorPolicy<'static> = SeparatorPolicy {
+    pub const SPACE_SEPARATOR: SeparatorPolicy = SeparatorPolicy {
         separator:  ' ',
         groups:     &[3],
         digits:     ASCII_DECIMAL,
     };
 
     /// Policy for placing a period every three decimal digits.
-    pub const DOT_SEPARATOR: SeparatorPolicy<'static> = SeparatorPolicy {
+    pub const DOT_SEPARATOR: SeparatorPolicy = SeparatorPolicy {
         separator:  '.',
         groups:     &[3],
         digits:     ASCII_DECIMAL,
     };
 
     /// Policy for placing a space every four hexadecimal digits.
-    pub const HEX_FOUR: SeparatorPolicy<'static> = SeparatorPolicy {
+    pub const HEX_FOUR: SeparatorPolicy = SeparatorPolicy {
         separator:  ' ',
         groups:     &[4],
         digits:     ASCII_HEX,
