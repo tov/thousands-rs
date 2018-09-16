@@ -21,7 +21,7 @@ thousands = "0.1.0"
 
 to your `Cargo.toml`.
 
-This crate supports Rust version 1.22 and newer.
+This crate supports Rust version 1.17 and newer.
 
 ## Examples
 
