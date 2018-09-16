@@ -1,7 +1,55 @@
-//! Provides a trait, [Separable](trait.Separable.html) for formatting numbers with
-//! separators between the digits. Typically this will be used to add commas or spaces
-//! every three digits from the right, but can be configured via a
-//! [SeparatorPolicy](struct.SeparatorPolicy.html).
+//! Provides a trait, [Separable], for formatting numbers with
+//! separators between the digits. Typically this will be used to add
+//! commas or spaces every three digits from the right, but can be
+//! configured via a [SeparatorPolicy].
+//!
+//! # Usage
+//!
+//! It’s [on crates.io](https://crates.io/crates/thousands), so you can add
+//!
+//! ```toml
+//! [dependencies]
+//! thousands = "0.1.0"
+//! ```
+//!
+//! to your `Cargo.toml`.
+//!
+//! This crate supports Rust version 1.22 and newer.
+//!
+//! # Examples
+//!
+//! The simplest way to use the library is with the
+//! [Separable::separate_with_commas] method, which does what it sounds like:
+//!
+//! ```
+//! use thousands::Separable;
+//!
+//! # let x = 0;
+//! println!("x is {}", x.separate_with_commas());
+//! ```
+//!
+//! There are also methods [Separable::separate_with_spaces] and
+//! [Separable::separate_with_dots], in case your culture uses those separators.
+//!
+//! However, it's also possible to pass a policy for different behavior:
+//!
+//! ```
+//! use thousands::{Separable, SeparatorPolicy, digits};
+//!
+//! let policy = SeparatorPolicy {
+//!     separator: ',',
+//!     groups:    &[3, 2],
+//!     digits:    digits::ASCII_DECIMAL,
+//! };
+//!
+//! assert_eq!( 1234567890.separate_by_policy(policy), "1,23,45,67,890" );
+//! ```
+//!
+//! [Separable]: trait.Separable.html
+//! [SeparatorPolicy]: struct.SeparatorPolicy.html
+//! [Separable::separate_with_commas]: trait.Separable.html#method.separate_with_commas
+//! [Separable::separate_with_spaces]: trait.Separable.html#method.separate_with_spaces
+//! [Separable::separate_with_dots]: trait.Separable.html#method.separate_with_dots
 
 use std::fmt::Display;
 
@@ -9,7 +57,7 @@ use std::fmt::Display;
 pub trait Separable {
     /// Inserts a comma every three digits from the right.
     ///
-    /// This is equivalent to `self.separate_by_policy(COMMA_SEPARATOR_POLICY)`.
+    /// This is equivalent to `self.separate_by_policy(policies::COMMA_SEPARATOR)`.
     ///
     /// # Examples
     ///
@@ -18,12 +66,12 @@ pub trait Separable {
     /// assert_eq!( 12345.separate_with_commas(), "12,345" );
     /// ```
     fn separate_with_commas(&self) -> String {
-        self.separate_by_policy(COMMA_SEPARATOR_POLICY)
+        self.separate_by_policy(policies::COMMA_SEPARATOR)
     }
 
     /// Inserts a space every three digits from the right.
     ///
-    /// This is equivalent to `self.separate_by_policy(SPACE_SEPARATOR_POLICY)`.
+    /// This is equivalent to `self.separate_by_policy(policies::SPACE_SEPARATOR)`.
     ///
     /// # Examples
     ///
@@ -32,12 +80,12 @@ pub trait Separable {
     /// assert_eq!( 12345.separate_with_spaces(), "12 345" );
     /// ```
     fn separate_with_spaces(&self) -> String {
-        self.separate_by_policy(SPACE_SEPARATOR_POLICY)
+        self.separate_by_policy(policies::SPACE_SEPARATOR)
     }
 
     /// Inserts a period every three digits from the right.
     ///
-    /// This is equivalent to `self.separate_by_policy(DOT_SEPARATOR_POLICY)`.
+    /// This is equivalent to `self.separate_by_policy(policies::DOT_SEPARATOR)`.
     ///
     /// # Examples
     ///
@@ -46,7 +94,7 @@ pub trait Separable {
     /// assert_eq!( 12345.separate_with_dots(), "12.345" );
     /// ```
     fn separate_with_dots(&self) -> String {
-        self.separate_by_policy(DOT_SEPARATOR_POLICY)
+        self.separate_by_policy(policies::DOT_SEPARATOR)
     }
 
     fn separate_by_policy(&self, policy: SeparatorPolicy) -> String;
@@ -140,44 +188,54 @@ pub struct SeparatorPolicy<'a> {
     pub digits:    &'a [char],
 }
 
-/// The decimal digits, in ASCII.
-pub const ASCII_DECIMAL_DIGITS: &'static [char] = &[
-    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-];
+/// Collections of digits.
+///
+/// These are used for constructing [SeparatorPolicy](struct.SeparatorPolicy.html)s.
+pub mod digits {
+    /// The decimal digits, in ASCII.
+    pub const ASCII_DECIMAL: &'static [char] = &[
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+    ];
 
-/// The hexadecimal digits, in ASCII.
-pub const ASCII_HEX_DIGITS: &'static [char] = &[
-    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-    'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F',
-];
+    /// The hexadecimal digits, in ASCII.
+    pub const ASCII_HEX: &'static [char] = &[
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+        'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F',
+    ];
+}
 
-/// Policy for placing a comma every three decimal digits.
-pub const COMMA_SEPARATOR_POLICY: SeparatorPolicy<'static> = SeparatorPolicy {
-    separator:  ',',
-    groups:     &[3],
-    digits:     ASCII_DECIMAL_DIGITS,
-};
+pub mod policies {
+    use super::*;
+    use super::digits::*;
 
-/// Policy for placing a space every three decimal digits.
-pub const SPACE_SEPARATOR_POLICY: SeparatorPolicy<'static> = SeparatorPolicy {
-    separator:  ' ',
-    groups:     &[3],
-    digits:     ASCII_DECIMAL_DIGITS,
-};
+    /// Policy for placing a comma every three decimal digits.
+    pub const COMMA_SEPARATOR: SeparatorPolicy<'static> = SeparatorPolicy {
+        separator:  ',',
+        groups:     &[3],
+        digits:     ASCII_DECIMAL,
+    };
 
-/// Policy for placing a period every three decimal digits.
-pub const DOT_SEPARATOR_POLICY: SeparatorPolicy<'static> = SeparatorPolicy {
-    separator:  '.',
-    groups:     &[3],
-    digits:     ASCII_DECIMAL_DIGITS,
-};
+    /// Policy for placing a space every three decimal digits.
+    pub const SPACE_SEPARATOR: SeparatorPolicy<'static> = SeparatorPolicy {
+        separator:  ' ',
+        groups:     &[3],
+        digits:     ASCII_DECIMAL,
+    };
 
-/// Policy for placing a space every four hexadecimal digits.
-pub const HEX_FOUR_POLICY: SeparatorPolicy<'static> = SeparatorPolicy {
-    separator:  ' ',
-    groups:     &[4],
-    digits:     ASCII_HEX_DIGITS,
-};
+    /// Policy for placing a period every three decimal digits.
+    pub const DOT_SEPARATOR: SeparatorPolicy<'static> = SeparatorPolicy {
+        separator:  '.',
+        groups:     &[3],
+        digits:     ASCII_DECIMAL,
+    };
+
+    /// Policy for placing a space every four hexadecimal digits.
+    pub const HEX_FOUR: SeparatorPolicy<'static> = SeparatorPolicy {
+        separator:  ' ',
+        groups:     &[4],
+        digits:     ASCII_HEX,
+    };
+}
 
 #[cfg(test)]
 mod test {
@@ -194,7 +252,7 @@ mod test {
         let policy = SeparatorPolicy {
             separator: ',',
             groups:    &[3, 2],
-            digits:    &ASCII_DECIMAL_DIGITS,
+            digits:    &digits::ASCII_DECIMAL,
         };
 
         assert_eq!( 1234567890.separate_by_policy(policy),
@@ -209,7 +267,7 @@ mod test {
 
     #[test]
     fn hex_four() {
-        assert_eq!( "deadbeef".separate_by_policy(HEX_FOUR_POLICY),
+        assert_eq!( "deadbeef".separate_by_policy(policies::HEX_FOUR),
                     "dead beef" );
     }
 }
