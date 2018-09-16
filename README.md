@@ -22,3 +22,31 @@ thousands = "0.1.0"
 to your `Cargo.toml`.
 
 This crate supports Rust version 1.22 and newer.
+
+## Examples
+
+The simplest way to use the library is with trait `Separable`’s method
+`separate_with_commas` method, which does what it sounds like:
+
+```rust
+use thousands::Separable;
+
+println!("x is {}", x.separate_with_commas());
+```
+
+There are also methods `separate_with_spaces` and
+`separate_with_dots`, in case your culture uses those separators.
+
+However, it's also possible to pass a policy for different behavior:
+
+```rust
+use thousands::{Separable, SeparatorPolicy, digits};
+
+let policy = SeparatorPolicy {
+    separator: ',',
+    groups:    &[3, 2],
+    digits:    digits::ASCII_DECIMAL,
+};
+
+assert_eq!( 1234567890.separate_by_policy(policy), "1,23,45,67,890" );
+```

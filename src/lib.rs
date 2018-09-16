@@ -1,7 +1,7 @@
-//! Provides a trait, [Separable], for formatting numbers with
+//! Provides a trait, [`Separable`], for formatting numbers with
 //! separators between the digits. Typically this will be used to add
 //! commas or spaces every three digits from the right, but can be
-//! configured via a [SeparatorPolicy].
+//! configured via a [`SeparatorPolicy`].
 //!
 //! # Usage
 //!
@@ -18,8 +18,8 @@
 //!
 //! # Examples
 //!
-//! The simplest way to use the library is with the
-//! [Separable::separate_with_commas] method, which does what it sounds like:
+//! The simplest way to use the library is with trait [`Separable`]’s method
+//! [`separate_with_commas`] method, which does what it sounds like:
 //!
 //! ```
 //! use thousands::Separable;
@@ -28,8 +28,8 @@
 //! println!("x is {}", x.separate_with_commas());
 //! ```
 //!
-//! There are also methods [Separable::separate_with_spaces] and
-//! [Separable::separate_with_dots], in case your culture uses those separators.
+//! There are also methods [`separate_with_spaces`] and
+//! [`separate_with_dots`], in case your culture uses those separators.
 //!
 //! However, it's also possible to pass a policy for different behavior:
 //!
@@ -45,11 +45,11 @@
 //! assert_eq!( 1234567890.separate_by_policy(policy), "1,23,45,67,890" );
 //! ```
 //!
-//! [Separable]: trait.Separable.html
-//! [SeparatorPolicy]: struct.SeparatorPolicy.html
-//! [Separable::separate_with_commas]: trait.Separable.html#method.separate_with_commas
-//! [Separable::separate_with_spaces]: trait.Separable.html#method.separate_with_spaces
-//! [Separable::separate_with_dots]: trait.Separable.html#method.separate_with_dots
+//! [`Separable`]: trait.Separable.html
+//! [`SeparatorPolicy`]: struct.SeparatorPolicy.html
+//! [`separate_with_commas`]: trait.Separable.html#method.separate_with_commas
+//! [`separate_with_spaces`]: trait.Separable.html#method.separate_with_spaces
+//! [`separate_with_dots`]: trait.Separable.html#method.separate_with_dots
 
 use std::fmt::Display;
 
