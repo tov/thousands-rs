@@ -10,6 +10,9 @@ The format is based on [Keep a Changelog] and this project adheres to
 
 ## [Unreleased]
 
+### Fixed
+- Github URL in Cargo.toml.
+
 ## [0.1.1] - 2018-09-16
 
 ### Added
