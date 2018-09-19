@@ -99,6 +99,24 @@ pub trait Separable {
         self.separate_by_policy(policies::DOT_SEPARATOR)
     }
 
+    /// Adds separators according to the given [`SeparatorPolicy`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use thousands::{Separable, SeparatorPolicy, digits};
+    ///
+    /// let policy = SeparatorPolicy {
+    ///     separator:  ':',
+    ///     groups:     &[1, 2, 3, 4],
+    ///     digits:     digits::ASCII_DECIMAL,
+    /// };
+    ///
+    /// assert_eq!( 1234567654321u64.separate_by_policy(policy),
+    ///             "123:4567:654:32:1" );
+    /// ```
+    ///
+    /// [`SeparatorPolicy`]: struct.SeparatorPolicy.html
     fn separate_by_policy(&self, policy: SeparatorPolicy) -> String;
 }
 
@@ -198,7 +216,7 @@ pub mod digits {
     ];
 
     /// The hexadecimal digits, in ASCII.
-    pub const ASCII_HEX: &[char] = &[
+    pub const ASCII_HEXADECIMAL: &[char] = &[
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
         'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F',
     ];
@@ -234,7 +252,7 @@ pub mod policies {
     pub const HEX_FOUR: SeparatorPolicy = SeparatorPolicy {
         separator:  ' ',
         groups:     &[4],
-        digits:     ASCII_HEX,
+        digits: ASCII_HEXADECIMAL,
     };
 }
 
