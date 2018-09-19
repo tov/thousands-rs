@@ -4,19 +4,6 @@
 //! commas or spaces every three digits from the right, but can be
 //! configured via a [`SeparatorPolicy`].
 //!
-//! # Usage
-//!
-//! It’s [on crates.io](https://crates.io/crates/thousands), so you can add
-//!
-//! ```toml
-//! [dependencies]
-//! thousands = "0.1.2"
-//! ```
-//!
-//! to your `Cargo.toml`.
-//!
-//! This crate supports Rust version 1.17 and newer.
-//!
 //! # Examples
 //!
 //! The simplest way to use the library is with trait [`Separable`]’s method
@@ -25,8 +12,9 @@
 //! ```
 //! use thousands::Separable;
 //!
-//! # let x = 0;
-//! println!("x is {}", x.separate_with_commas());
+//! assert_eq!(   12345  .separate_with_commas(),  "12,345" );
+//! assert_eq!( (-12345) .separate_with_commas(), "-12,345" );
+//! assert_eq!(    9876.5.separate_with_commas(),   "9,876.5" );
 //! ```
 //!
 //! There are also methods [`separate_with_spaces`] and
@@ -45,6 +33,19 @@
 //!
 //! assert_eq!( 1234567890.separate_by_policy(policy), "1,23,45,67,890" );
 //! ```
+//!
+//! # Usage
+//!
+//! It’s [on crates.io](https://crates.io/crates/thousands), so you can add
+//!
+//! ```toml
+//! [dependencies]
+//! thousands = "0.1.2"
+//! ```
+//!
+//! to your `Cargo.toml`.
+//!
+//! This crate supports Rust version 1.17 and newer.
 //!
 //! [`Separable`]: trait.Separable.html
 //! [`SeparatorPolicy`]: struct.SeparatorPolicy.html
