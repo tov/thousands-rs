@@ -108,8 +108,6 @@ impl<T: Display> Separable for T {
         let (before, number, after) = find_span(&original, |c| policy.digits.contains(&c));
         let formatted = insert_separator_rev(number, policy.separator, policy.groups);
 
-        // Guessing the required size, but this will only be correct all characters in
-        // `formatted` are one byte in UTF-8.
         let mut result = String::with_capacity(before.len() + formatted.len() + after.len());
 
         result.push_str(before);
