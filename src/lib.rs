@@ -113,16 +113,16 @@ impl<T: Display> Separable for T {
         let mut result = String::with_capacity(before.len() + formatted.len() + after.len());
 
         result.push_str(before);
-        result.extend(formatted.into_iter().rev());
+        result.extend(formatted.chars().rev());
         result.push_str(after);
 
         result
     }
 }
 
-fn insert_separator_rev(number: &str, sep: char, mut groups: &[u8]) -> Vec<char> {
+fn insert_separator_rev(number: &str, sep: char, mut groups: &[u8]) -> String {
     // Does guessing the size like on the next line make sense?
-    let mut buffer  = Vec::with_capacity(2 * number.len());
+    let mut buffer  = String::with_capacity(2 * number.len());
     let mut counter = 0;
 
     for c in number.chars().rev() {
