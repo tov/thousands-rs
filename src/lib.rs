@@ -18,7 +18,7 @@
 //! ```
 //!
 //! There are also methods [`separate_with_spaces`] and
-//! [`separate_with_dots`], in case your culture uses those separators.
+//! [`separate_with_dots`], in case you prefer those separators.
 //!
 //! However, it's also possible to pass a policy for different behavior:
 //!
