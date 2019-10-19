@@ -8,9 +8,11 @@ pub struct SeparatorIterator<'a> {
     current_group_size:      usize,
 }
 
-fn ceil_div_mod(n: usize, m: usize) -> (usize, usize) {
-    let round_up = n + m - 1;
-    (round_up / m, round_up % m + 1)
+pub fn separate_str_iter<'a>(policy: &'a SeparatorPolicy, input: &'a str)
+                             -> impl Iterator<Item = (char, bool)> + 'a {
+
+    let iter = SeparatorIterator::new(policy, input.chars().count());
+    input.chars().zip(iter)
 }
 
 impl<'a> SeparatorIterator<'a> {
@@ -74,6 +76,11 @@ impl<'a> Iterator for SeparatorIterator<'a> {
     }
 }
 
+fn ceil_div_mod(n: usize, m: usize) -> (usize, usize) {
+    let round_up = n + m - 1;
+    (round_up / m, round_up % m + 1)
+}
+
 #[cfg(test)]
 mod test {
     use crate::*;
@@ -93,10 +100,10 @@ mod test {
 
         eprintln!("*** {:?} ***", iter);
 
-        iter.zip(digits.chars())
-            .flat_map(|(comma, digit)|
+        separate_str_iter(policy, digits)
+            .flat_map(|(digit, comma_after)|
                     once(digit)
-                        .chain(if comma { Some(',') } else { None }))
+                        .chain(if comma_after { Some(',') } else { None }))
             .collect()
     }
 
