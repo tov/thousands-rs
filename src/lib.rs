@@ -1,4 +1,4 @@
-#![doc(html_root_url = "https://docs.rs/thousands/0.1.2")]
+#![doc(html_root_url = "https://docs.rs/thousands/0.1.3")]
 //! Provides a trait, [`Separable`], for formatting numbers with
 //! separators between the digits. Typically this will be used to add
 //! commas or spaces every three digits from the right, but can be
@@ -40,7 +40,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! thousands = "0.1.2"
+//! thousands = "0.1.3"
 //! ```
 //!
 //! to your `Cargo.toml`.
