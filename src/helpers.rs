@@ -8,6 +8,11 @@ pub struct SeparatorIterator<'a> {
     current_group_size:      usize,
 }
 
+fn ceil_div_mod(n: usize, m: usize) -> (usize, usize) {
+    let round_up = n + m - 1;
+    (round_up / m, round_up % m + 1)
+}
+
 impl<'a> SeparatorIterator<'a> {
     pub fn new(policy: &'a SeparatorPolicy, ndigits: usize) -> Self {
         let groups = &policy.groups;
@@ -22,7 +27,7 @@ impl<'a> SeparatorIterator<'a> {
                     groups,
                     repeat_groups_remaining: 0,
                     current_group_index:     index,
-                    current_group_size:      sum + ndigits,
+                    current_group_size:      ndigits - (sum - group as usize),
                 }
             }
         }
@@ -32,12 +37,14 @@ impl<'a> SeparatorIterator<'a> {
             as usize;
 
         let digits_remaining = ndigits - sum;
+        let (repeat_groups_remaining, current_group_size)
+                             = ceil_div_mod(digits_remaining, repeat_group_len);
 
         SeparatorIterator {
             groups,
-            repeat_groups_remaining: digits_remaining / repeat_group_len + 1,
-            current_group_index:     groups.len() - 1,
-            current_group_size:      digits_remaining % repeat_group_len,
+            repeat_groups_remaining,
+            current_group_index: groups.len() - 1,
+            current_group_size,
         }
     }
 }
@@ -46,26 +53,24 @@ impl<'a> Iterator for SeparatorIterator<'a> {
     type Item = bool;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.current_group_size > 0 {
-            self.current_group_size -= 1;
-            return Some(false);
-        }
+        self.current_group_size.checked_sub(1).map(|current_group_size| {
+            self.current_group_size = current_group_size;
 
-        if self.repeat_groups_remaining > 0 {
-            self.repeat_groups_remaining -= 1;
+            if self.current_group_size > 0 {
+                return false;
+            }
+
+            if let Some(repeat_groups_remaining) = self.repeat_groups_remaining.checked_sub(1) {
+                self.repeat_groups_remaining = repeat_groups_remaining;
+            } else if let Some(current_group_index) = self.current_group_index.checked_sub(1) {
+                self.current_group_index = current_group_index;
+            } else {
+                return false;
+            }
+
             self.current_group_size = self.groups[self.current_group_index] as usize;
-            self.current_group_size -= 1;
-            return Some(true);
-        }
-
-        if self.current_group_index > 0 {
-            self.current_group_index -= 1;
-            self.current_group_size = self.groups[self.current_group_index] as usize;
-            self.current_group_size -= 1;
-            return Some(true);
-        }
-
-        return None;
+            return true;
+        })
     }
 }
 
@@ -86,10 +91,12 @@ mod test {
         let policy = &make_policy(groups);
         let iter = SeparatorIterator::new(policy, digits.len());
 
+        eprintln!("*** {:?} ***", iter);
+
         iter.zip(digits.chars())
             .flat_map(|(comma, digit)|
-                if comma { Some(',') } else { None }.into_iter()
-                    .chain(once(digit)))
+                    once(digit)
+                        .chain(if comma { Some(',') } else { None }))
             .collect()
     }
 
@@ -104,14 +111,56 @@ mod test {
         };
     }
 
-    grouping_test!(threes_of_1, [3], "1");
-    grouping_test!(threes_of_2, [3], "21");
-    grouping_test!(threes_of_3, [3], "321");
-    grouping_test!(threes_of_4, [3], "4,321");
-    grouping_test!(threes_of_5, [3], "54,321");
-    grouping_test!(threes_of_6, [3], "654,321");
-    grouping_test!(threes_of_7, [3], "7,654,321");
-    grouping_test!(threes_of_8, [3], "87,654,321");
-    grouping_test!(threes_of_9, [3], "987,654,321");
+    grouping_test!(by_1s_of_0, [1], "");
+    grouping_test!(by_1s_of_1, [1], "1");
+    grouping_test!(by_1s_of_2, [1], "2,1");
+    grouping_test!(by_1s_of_3, [1], "3,2,1");
 
+    grouping_test!(by_2s_of_0, [2], "");
+    grouping_test!(by_2s_of_1, [2], "1");
+    grouping_test!(by_2s_of_2, [2], "21");
+    grouping_test!(by_2s_of_3, [2], "3,21");
+    grouping_test!(by_2s_of_4, [2], "43,21");
+    grouping_test!(by_2s_of_5, [2], "5,43,21");
+    grouping_test!(by_2s_of_6, [2], "65,43,21");
+    grouping_test!(by_2s_of_7, [2], "7,65,43,21");
+    grouping_test!(by_2s_of_8, [2], "87,65,43,21");
+    grouping_test!(by_2s_of_9, [2], "9,87,65,43,21");
+
+    grouping_test!(by_3s_of_1, [3], "1");
+    grouping_test!(by_3s_of_2, [3], "21");
+    grouping_test!(by_3s_of_3, [3], "321");
+    grouping_test!(by_3s_of_4, [3], "4,321");
+    grouping_test!(by_3s_of_5, [3], "54,321");
+    grouping_test!(by_3s_of_6, [3], "654,321");
+    grouping_test!(by_3s_of_7, [3], "7,654,321");
+    grouping_test!(by_3s_of_8, [3], "87,654,321");
+    grouping_test!(by_3s_of_9, [3], "987,654,321");
+
+    grouping_test!(by_2s3_of_1, [3, 2], "1");
+    grouping_test!(by_2s3_of_2, [3, 2], "21");
+    grouping_test!(by_2s3_of_3, [3, 2], "321");
+    grouping_test!(by_2s3_of_4, [3, 2], "4,321");
+    grouping_test!(by_2s3_of_5, [3, 2], "54,321");
+    grouping_test!(by_2s3_of_6, [3, 2], "6,54,321");
+    grouping_test!(by_2s3_of_7, [3, 2], "76,54,321");
+    grouping_test!(by_2s3_of_8, [3, 2], "8,76,54,321");
+    grouping_test!(by_2s3_of_9, [3, 2], "98,76,54,321");
+
+    grouping_test!(by_5s4321_of_20, [1, 2, 3, 4, 5],
+                   "KJIHG,FEDCB,A987,654,32,1");
+    grouping_test!(by_5s4321_of_16, [1, 2, 3, 4, 5],
+                   "G,FEDCB,A987,654,32,1");
+    grouping_test!(by_5s4321_of_11, [1, 2, 3, 4, 5],
+                   "B,A987,654,32,1");
+    grouping_test!(by_5s4321_of_10, [1, 2, 3, 4, 5],
+                   "A987,654,32,1");
+    grouping_test!(by_5s4321_of_9, [1, 2, 3, 4, 5],
+                   "987,654,32,1");
+    grouping_test!(by_5s4321_of_7, [1, 2, 3, 4, 5],
+                   "7,654,32,1");
+    grouping_test!(by_5s4321_of_1, [1, 2, 3, 4, 5],
+                   "1");
+    grouping_test!(by_5s4321_of_0, [1, 2, 3, 4, 5],
+                   "");
 }
