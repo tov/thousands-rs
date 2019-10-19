@@ -23,8 +23,9 @@ use thousands::Separable;
  assert_eq!(    9876.5.separate_with_commas(),   "9,876.5" );
 ```
 
-There are also methods `separate_with_spaces` and
-`separate_with_dots`, in case your culture uses those separators.
+There are also methods `separate_with_spaces`, `separate_with_dots`, and
+`separate_with_underscores`, in case you, your culture, or your file
+format prefer those separators.
 
 However, it's also possible to pass a policy for different behavior:
 
