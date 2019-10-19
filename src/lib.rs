@@ -99,6 +99,20 @@ pub trait Separable {
         self.separate_by_policy(policies::DOT_SEPARATOR)
     }
 
+    /// Inserts an underscore every three digits from the right.
+    ///
+    /// This is equivalent to `self.separate_by_policy(policies::UNDERSCORE_SEPARATOR)`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use thousands::*;
+    /// assert_eq!( 12345.separate_with_underscores(), "12_345" );
+    /// ```
+    fn separate_with_underscores(&self) -> String {
+        self.separate_by_policy(policies::UNDERSCORE_SEPARATOR)
+    }
+
     /// Adds separators according to the given [`SeparatorPolicy`].
     ///
     /// # Examples
@@ -244,6 +258,13 @@ pub mod policies {
     /// Policy for placing a period every three decimal digits.
     pub const DOT_SEPARATOR: SeparatorPolicy = SeparatorPolicy {
         separator:  '.',
+        groups:     &[3],
+        digits:     ASCII_DECIMAL,
+    };
+
+    /// Policy for placing an underscore every three decimal digits.
+    pub const UNDERSCORE_SEPARATOR: SeparatorPolicy = SeparatorPolicy {
+        separator:  '_',
         groups:     &[3],
         digits:     ASCII_DECIMAL,
     };
