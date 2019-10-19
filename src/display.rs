@@ -1,60 +1,61 @@
 use std::fmt::Display;
 
 use crate::{Separable, SeparatorPolicy};
-use crate::helpers::SeparatorIterator;
 
 impl<T: Display> Separable for T {
     fn separate_by_policy(&self, policy: SeparatorPolicy) -> String {
         let original = self.to_string();
-        let (before, number, after, count) = find_span(&original, |c| policy.digits.contains(&c));
-        let iter = SeparatorIterator::new(&policy, count);
+        let (before, number, after) = find_span(&original, |c| policy.digits.contains(&c));
+        let formatted = insert_separator_rev(number, policy.separator, policy.groups);
 
-        let mut result = String::with_capacity(original.len() + iter.sep_len());
+        let mut result = String::with_capacity(before.len() + formatted.len() + after.len());
 
         result.push_str(before);
-
-        for (digit, comma_after) in number.chars().zip(iter) {
-            result.push(digit);
-            if comma_after {
-                result.push(policy.separator);
-            }
-        }
-
+        result.extend(formatted.chars().rev());
         result.push_str(after);
 
         result
     }
 }
 
-fn find_span<F>(s: &str, is_digit: F) -> (&str, &str, &str, usize) where F: Fn(char) -> bool {
-    let number_start = match s.char_indices()
-        .find_map(|(i, c)|
-            if is_digit(c) {
-                Some(i)
-            } else {
-                None
-            }) {
+fn insert_separator_rev(number: &str, sep: char, mut groups: &[u8]) -> String {
+    // Does guessing the size like on the next line make sense?
+    let mut buffer  = String::with_capacity(2 * number.len());
+    let mut counter = 0;
 
-        Some(len) => len,
-        None      => return (s, "", "", 0),
+    for c in number.chars().rev() {
+        if Some(&counter) == groups.get(0) {
+            buffer.push(sep);
+            counter = 0;
+
+            if groups.len() > 1 {
+                groups = &groups[1 ..];
+            }
+        }
+
+        counter += 1;
+        buffer.push(c);
+    }
+
+    buffer
+}
+
+fn find_span<F>(s: &str, is_digit: F) -> (&str, &str, &str) where F: Fn(char) -> bool {
+    let mut chars   = s.chars().enumerate().skip_while(|&(_, c)| !is_digit(c));
+
+    let start       = if let Some((i, _)) = chars.next() {
+        i
+    } else {
+        return (s, "", "");
     };
 
-    let mut count = 0;
-
-    let number_end = number_start + match s[number_start ..].char_indices()
-        .find_map(|(i, c)|
-            if is_digit(c) {
-                count += 1;
-                None
-            } else {
-                Some(i)
-            }) {
-
-        Some(len) => len,
-        None      => s.len() - number_start,
+    let stop        = if let Some((i, _)) = chars.skip_while(|&(_, c)| is_digit(c)).next() {
+        i
+    } else {
+        s.len()
     };
 
-    (&s[.. number_start], &s[number_start .. number_end], &s[number_end ..], count)
+    (&s[.. start], &s[start .. stop], &s[stop ..])
 }
 
 #[cfg(test)]

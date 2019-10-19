@@ -6,7 +6,6 @@ pub struct SeparatorIterator<'a> {
     repeat_groups_remaining: usize,
     current_group_index:     usize,
     current_group_size:      usize,
-    len:                     usize,
 }
 
 pub fn separate_str_iter<'a>(policy: &'a SeparatorPolicy, input: &'a str)
@@ -17,7 +16,7 @@ pub fn separate_str_iter<'a>(policy: &'a SeparatorPolicy, input: &'a str)
 }
 
 impl<'a> SeparatorIterator<'a> {
-    pub fn new(policy: &'a SeparatorPolicy, len: usize) -> Self {
+    pub fn new(policy: &'a SeparatorPolicy, ndigits: usize) -> Self {
         let groups = &policy.groups;
 
         let mut sum = 0;
@@ -25,13 +24,12 @@ impl<'a> SeparatorIterator<'a> {
         for (index, &group) in groups.into_iter().enumerate() {
             sum += group as usize;
 
-            if len <= sum {
+            if ndigits <= sum {
                 return SeparatorIterator {
                     groups,
                     repeat_groups_remaining: 0,
                     current_group_index:     index,
-                    current_group_size:      len - (sum - group as usize),
-                    len,
+                    current_group_size:      ndigits - (sum - group as usize),
                 }
             }
         }
@@ -40,22 +38,22 @@ impl<'a> SeparatorIterator<'a> {
             .expect("must provide at least one group")
             as usize;
 
+<<<<<<< HEAD
         let len_remaining = len - sum;
         let (repeat_groups_remaining, current_group_size)
                           = ceil_div_mod(len_remaining, repeat_group_len);
+=======
+        let digits_remaining = ndigits - sum;
+        let (repeat_groups_remaining, current_group_size)
+                             = ceil_div_mod(digits_remaining, repeat_group_len);
+>>>>>>> Helper for precomputing where commas go works.
 
         SeparatorIterator {
             groups,
             repeat_groups_remaining,
             current_group_index: groups.len() - 1,
             current_group_size,
-            len,
         }
-    }
-
-    /// How many separators remain?
-    pub fn sep_len(&self) -> usize {
-        self.current_group_index + self.repeat_groups_remaining
     }
 }
 
@@ -65,7 +63,6 @@ impl<'a> Iterator for SeparatorIterator<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         self.current_group_size.checked_sub(1).map(|current_group_size| {
             self.current_group_size = current_group_size;
-            self.len -= 1;
 
             if self.current_group_size > 0 {
                 return false;
@@ -83,16 +80,6 @@ impl<'a> Iterator for SeparatorIterator<'a> {
             return true;
         })
     }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.len(), Some(self.len()))
-    }
-}
-
-impl<'a> ExactSizeIterator for SeparatorIterator<'a> {
-    fn len(&self) -> usize {
-        self.len
-    }
 }
 
 fn ceil_div_mod(n: usize, m: usize) -> (usize, usize) {
@@ -101,20 +88,15 @@ fn ceil_div_mod(n: usize, m: usize) -> (usize, usize) {
 }
 
 #[cfg(test)]
-mod test_common {
+mod test {
     use crate::*;
-    pub use super::*;
+    use super::*;
 
-    pub fn make_policy(groups: &[u8]) -> SeparatorPolicy {
+    fn make_policy(groups: &[u8]) -> SeparatorPolicy {
         let mut result = policies::COMMA_SEPARATOR;
         result.groups = groups;
         result
     }
-}
-
-#[cfg(test)]
-mod grouping_test {
-    use super::test_common::*;
 
     fn group_string(groups: &[u8], digits: &str) -> String {
         use std::iter::once;
@@ -194,71 +176,4 @@ mod grouping_test {
                    "1");
     grouping_test!(by_5s4321_of_0, [1, 2, 3, 4, 5],
                    "");
-}
-
-#[cfg(test)]
-mod sep_len_test {
-    use super::test_common::*;
-
-    fn run_iterator(mut iter: SeparatorIterator) -> (Vec<usize>, Vec<usize>) {
-        let mut predictions = Vec::with_capacity(iter.len());
-        let mut actuals     = Vec::with_capacity(iter.len());
-
-        let mut prediction;
-        while let Some(actual) = {
-            prediction = iter.sep_len();
-            iter.next()
-        } {
-            predictions.push(prediction);
-            actuals.push(if actual { 1 } else { 0 })
-        }
-
-        let mut acc = 0;
-        for actual in actuals.iter_mut().rev() {
-            acc += *actual;
-            *actual = acc;
-        }
-
-        (predictions, actuals)
-    }
-
-    macro_rules! run_down {
-        ( $name:ident, $groups:tt, $size:tt ) => {
-            #[test]
-            fn $name() {
-                let policy = &make_policy(&$groups);
-
-                let (predictions, actuals) =
-                        run_iterator(SeparatorIterator::new(policy, $size));
-
-                assert_eq!(predictions, actuals);
-            }
-        };
-    }
-
-    run_down!(by_3s_of_10, [3], 10);
-
-    run_down!(by_2s_of_10, [2], 10);
-    run_down!(by_2s_of_9, [2], 9);
-    run_down!(by_2s_of_8, [2], 8);
-    run_down!(by_2s_of_7, [2], 7);
-    run_down!(by_2s_of_6, [2], 6);
-    run_down!(by_2s_of_5, [2], 5);
-    run_down!(by_2s_of_4, [2], 4);
-    run_down!(by_2s_of_3, [2], 3);
-    run_down!(by_2s_of_2, [2], 2);
-    run_down!(by_2s_of_1, [2], 1);
-    run_down!(by_2s_of_0, [2], 0);
-
-    run_down!(by_1s23_of_10, [3, 2, 1], 10);
-    run_down!(by_1s23_of_9, [3, 2, 1], 9);
-    run_down!(by_1s23_of_8, [3, 2, 1], 8);
-    run_down!(by_1s23_of_7, [3, 2, 1], 7);
-    run_down!(by_1s23_of_6, [3, 2, 1], 6);
-    run_down!(by_1s23_of_5, [3, 2, 1], 5);
-    run_down!(by_1s23_of_4, [3, 2, 1], 4);
-    run_down!(by_1s23_of_3, [3, 2, 1], 3);
-    run_down!(by_1s23_of_2, [3, 2, 1], 2);
-    run_down!(by_1s23_of_1, [3, 2, 1], 1);
-    run_down!(by_1s23_of_0, [3, 2, 1], 0);
 }
