@@ -27,7 +27,7 @@
 //! use thousands::{Separable, SeparatorPolicy, digits};
 //!
 //! let policy = SeparatorPolicy {
-//!     separator: ',',
+//!     separator: ",",
 //!     groups:    &[3, 2],
 //!     digits:    digits::ASCII_DECIMAL,
 //! };

@@ -10,6 +10,19 @@ The format is based on [Keep a Changelog] and this project adheres to
 
 ## [0.1.4] - 2019-10-19
 
+### Changed
+- The separator is now a `&str` rather than a `char`.
+
+### Added
+- A non-blanket `impl Separable for str` allocates only once, for the result,
+rather than twice as the blanket `Display`-based `impl` does.
+- An empty group array results in no separators.
+
+### Fixed
+- Now respects UTF-8 for the separator as well.
+
+## [0.1.4] - 2019-10-19
+
 ### Fixed
 - Now respects UTF-8.
 

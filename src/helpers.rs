@@ -8,13 +8,6 @@ pub struct SeparatorIterator<'a> {
     current_group_size:      usize,
 }
 
-pub fn separate_str_iter<'a>(policy: &'a SeparatorPolicy, input: &'a str)
-                             -> impl Iterator<Item = (char, bool)> + 'a {
-
-    let iter = SeparatorIterator::new(policy, input.chars().count());
-    input.chars().zip(iter)
-}
-
 impl<'a> SeparatorIterator<'a> {
     pub fn new(policy: &'a SeparatorPolicy, ndigits: usize) -> Self {
         let groups = &policy.groups;
@@ -34,9 +27,17 @@ impl<'a> SeparatorIterator<'a> {
             }
         }
 
-        let repeat_group_len = *groups.last()
-            .expect("must provide at least one group")
-            as usize;
+        let repeat_group_len = match groups.last() {
+            Some(n) => *n as usize,
+            None    =>
+                return SeparatorIterator {
+                    groups:                  &[],
+                    repeat_groups_remaining: 0,
+                    current_group_index:     0,
+                    current_group_size:      0,
+                    len,
+                }
+        };
 
 <<<<<<< HEAD
         let len_remaining = len - sum;
@@ -61,24 +62,23 @@ impl<'a> Iterator for SeparatorIterator<'a> {
     type Item = bool;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.current_group_size.checked_sub(1).map(|current_group_size| {
-            self.current_group_size = current_group_size;
+        self.len = self.len.checked_sub(1)?;
 
-            if self.current_group_size > 0 {
-                return false;
-            }
+        self.current_group_size = self.current_group_size.saturating_sub(1);
+        if self.current_group_size > 0 {
+            return Some(false);
+        }
 
-            if let Some(repeat_groups_remaining) = self.repeat_groups_remaining.checked_sub(1) {
-                self.repeat_groups_remaining = repeat_groups_remaining;
-            } else if let Some(current_group_index) = self.current_group_index.checked_sub(1) {
-                self.current_group_index = current_group_index;
-            } else {
-                return false;
-            }
+        if let Some(repeat_groups_remaining) = self.repeat_groups_remaining.checked_sub(1) {
+            self.repeat_groups_remaining = repeat_groups_remaining;
+        } else if let Some(current_group_index) = self.current_group_index.checked_sub(1) {
+            self.current_group_index = current_group_index;
+        } else {
+            return Some(false);
+        }
 
-            self.current_group_size = self.groups[self.current_group_index] as usize;
-            return true;
-        })
+        self.current_group_size = self.groups[self.current_group_index] as usize;
+        return Some(true);
     }
 }
 
@@ -102,11 +102,9 @@ mod test {
         use std::iter::once;
 
         let policy = &make_policy(groups);
-        let iter = SeparatorIterator::new(policy, digits.len());
+        let iter = SeparatorIterator::new(policy, digits.chars().count());
 
-        eprintln!("*** {:?} ***", iter);
-
-        separate_str_iter(policy, digits)
+        digits.chars().zip(iter)
             .flat_map(|(digit, comma_after)|
                     once(digit)
                         .chain(if comma_after { Some(',') } else { None }))
@@ -123,6 +121,11 @@ mod test {
             }
         };
     }
+
+    grouping_test!(by_nothing_of_0, [], "");
+    grouping_test!(by_nothing_of_1, [], "1");
+    grouping_test!(by_nothing_of_2, [], "21");
+    grouping_test!(by_nothing_of_3, [], "321");
 
     grouping_test!(by_1s_of_0, [1], "");
     grouping_test!(by_1s_of_1, [1], "1");
@@ -176,4 +179,73 @@ mod test {
                    "1");
     grouping_test!(by_5s4321_of_0, [1, 2, 3, 4, 5],
                    "");
+}
+
+#[cfg(test)]
+mod sep_len_test {
+    use super::test_common::*;
+
+    fn run_iterator(mut iter: SeparatorIterator) -> (Vec<usize>, Vec<usize>) {
+        let mut predictions = Vec::with_capacity(iter.len());
+        let mut actuals     = Vec::with_capacity(iter.len());
+
+        let mut prediction;
+        while let Some(actual) = {
+            prediction = iter.sep_len();
+            iter.next()
+        } {
+            predictions.push(prediction);
+            actuals.push(if actual { 1 } else { 0 })
+        }
+
+        let mut acc = 0;
+        for actual in actuals.iter_mut().rev() {
+            acc += *actual;
+            *actual = acc;
+        }
+
+        (predictions, actuals)
+    }
+
+    macro_rules! run_down {
+        ( $name:ident, $groups:tt, $size:tt ) => {
+            #[test]
+            fn $name() {
+                let policy = &make_policy(&$groups);
+
+                let (predictions, actuals) =
+                        run_iterator(SeparatorIterator::new(policy, $size));
+
+                assert_eq!(predictions, actuals);
+            }
+        };
+    }
+
+    run_down!(by_nothing_of_10, [], 10);
+
+    run_down!(by_3s_of_10, [3], 10);
+
+    run_down!(by_2s_of_10, [2], 10);
+    run_down!(by_2s_of_9, [2], 9);
+    run_down!(by_2s_of_8, [2], 8);
+    run_down!(by_2s_of_7, [2], 7);
+    run_down!(by_2s_of_6, [2], 6);
+    run_down!(by_2s_of_5, [2], 5);
+    run_down!(by_2s_of_4, [2], 4);
+    run_down!(by_2s_of_3, [2], 3);
+    run_down!(by_2s_of_2, [2], 2);
+    run_down!(by_2s_of_1, [2], 1);
+    run_down!(by_2s_of_0, [2], 0);
+
+    run_down!(by_1s23_of_10, [3, 2, 1], 10);
+    run_down!(by_1s23_of_9, [3, 2, 1], 9);
+    run_down!(by_1s23_of_8, [3, 2, 1], 8);
+    run_down!(by_1s23_of_7, [3, 2, 1], 7);
+    run_down!(by_1s23_of_6, [3, 2, 1], 6);
+    run_down!(by_1s23_of_5, [3, 2, 1], 5);
+    run_down!(by_1s23_of_4, [3, 2, 1], 4);
+    run_down!(by_1s23_of_3, [3, 2, 1], 3);
+    run_down!(by_1s23_of_2, [3, 2, 1], 2);
+    run_down!(by_1s23_of_1, [3, 2, 1], 1);
+    run_down!(by_1s23_of_0, [3, 2, 1], 0);
 }

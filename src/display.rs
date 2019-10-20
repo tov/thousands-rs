@@ -2,10 +2,9 @@ use std::fmt::Display;
 
 use crate::{Separable, SeparatorPolicy};
 
-impl<T: Display> Separable for T {
+impl Separable for str {
     fn separate_by_policy(&self, policy: SeparatorPolicy) -> String {
-        let original = self.to_string();
-        let (before, number, after) = find_span(&original, |c| policy.digits.contains(&c));
+        let (before, number, after, count) = find_span(&self, |c| policy.digits.contains(&c));
         let formatted = insert_separator_rev(number, policy.separator, policy.groups);
 
         let mut result = String::with_capacity(before.len() + formatted.len() + after.len());
@@ -23,6 +22,7 @@ fn insert_separator_rev(number: &str, sep: char, mut groups: &[u8]) -> String {
     let mut buffer  = String::with_capacity(2 * number.len());
     let mut counter = 0;
 
+<<<<<<< HEAD
     for c in number.chars().rev() {
         if Some(&counter) == groups.get(0) {
             buffer.push(sep);
@@ -30,6 +30,12 @@ fn insert_separator_rev(number: &str, sep: char, mut groups: &[u8]) -> String {
 
             if groups.len() > 1 {
                 groups = &groups[1 ..];
+=======
+        for (digit, comma_after) in number.chars().zip(iter) {
+            result.push(digit);
+            if comma_after {
+                result.push_str(policy.separator);
+>>>>>>> 2d48dbd... Another UTF-8 fix; handling the empty groups case.
             }
         }
 
@@ -40,22 +46,41 @@ fn insert_separator_rev(number: &str, sep: char, mut groups: &[u8]) -> String {
     buffer
 }
 
-fn find_span<F>(s: &str, is_digit: F) -> (&str, &str, &str) where F: Fn(char) -> bool {
-    let mut chars   = s.chars().enumerate().skip_while(|&(_, c)| !is_digit(c));
+impl<T: Display> Separable for T {
+    fn separate_by_policy(&self, policy: SeparatorPolicy) -> String {
+        self.to_string().as_str().separate_by_policy(policy)
+    }
+}
 
-    let start       = if let Some((i, _)) = chars.next() {
-        i
-    } else {
-        return (s, "", "");
+fn find_span<F>(s: &str, is_digit: F) -> (&str, &str, &str, usize) where F: Fn(char) -> bool {
+    let number_start = match s.char_indices()
+        .find_map(|(i, c)|
+            if is_digit(c) {
+                Some(i)
+            } else {
+                None
+            }) {
+
+        Some(len) => len,
+        None      => return (s, "", "", 0),
     };
 
-    let stop        = if let Some((i, _)) = chars.skip_while(|&(_, c)| is_digit(c)).next() {
-        i
-    } else {
-        s.len()
+    let mut count = 0;
+
+    let number_end = number_start + match s[number_start ..].char_indices()
+        .find_map(|(i, c)|
+            if is_digit(c) {
+                count += 1;
+                None
+            } else {
+                Some(i)
+            }) {
+
+        Some(len) => len,
+        None      => s.len() - number_start,
     };
 
-    (&s[.. start], &s[start .. stop], &s[stop ..])
+    (&s[.. number_start], &s[number_start .. number_end], &s[number_end ..], count)
 }
 
 #[cfg(test)]
@@ -69,9 +94,21 @@ mod test {
     }
 
     #[test]
+    fn smilies() {
+        let policy = SeparatorPolicy {
+            separator: "😃😃",
+            groups:    &[1],
+            digits:    &['🙁'],
+        };
+
+        assert_eq!( "  🙁🙁🙁🙁🙁  ".separate_by_policy(policy),
+                    "  🙁😃😃🙁😃😃🙁😃😃🙁😃😃🙁  " );
+    }
+
+    #[test]
     fn three_two_two_two() {
         let policy = SeparatorPolicy {
-            separator: ',',
+            separator: ",",
             groups:    &[3, 2],
             digits:    &digits::ASCII_DECIMAL,
         };

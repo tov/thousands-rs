@@ -66,7 +66,7 @@ pub trait Separable {
     /// use thousands::{Separable, SeparatorPolicy, digits};
     ///
     /// let policy = SeparatorPolicy {
-    ///     separator:  ':',
+    ///     separator:  ":",
     ///     groups:     &[1, 2, 3, 4],
     ///     digits:     digits::ASCII_DECIMAL,
     /// };

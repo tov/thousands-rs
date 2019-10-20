@@ -13,7 +13,7 @@ use crate::digits::*;
 #[derive(Debug, Clone, Copy)]
 pub struct SeparatorPolicy<'a> {
     /// The separator to insert.
-    pub separator: char,
+    pub separator: &'a str,
     /// The grouping. The numbers in this array give the size of the groups, from
     /// right to left, with the last number in the array giving the size of all
     /// subsequent groups.
@@ -32,35 +32,35 @@ pub struct SeparatorPolicy<'a> {
 
 /// Policy for placing a comma every three decimal digits.
 pub const COMMA_SEPARATOR: SeparatorPolicy = SeparatorPolicy {
-    separator:  ',',
+    separator:  ",",
     groups:     &[3],
     digits:     ASCII_DECIMAL,
 };
 
 /// Policy for placing a space every three decimal digits.
 pub const SPACE_SEPARATOR: SeparatorPolicy = SeparatorPolicy {
-    separator:  ' ',
+    separator:  " ",
     groups:     &[3],
     digits:     ASCII_DECIMAL,
 };
 
 /// Policy for placing a period every three decimal digits.
 pub const DOT_SEPARATOR: SeparatorPolicy = SeparatorPolicy {
-    separator:  '.',
+    separator:  ".",
     groups:     &[3],
     digits:     ASCII_DECIMAL,
 };
 
 /// Policy for placing an underscore every three decimal digits.
 pub const UNDERSCORE_SEPARATOR: SeparatorPolicy = SeparatorPolicy {
-    separator:  '_',
+    separator:  "_",
     groups:     &[3],
     digits:     ASCII_DECIMAL,
 };
 
 /// Policy for placing a space every four hexadecimal digits.
 pub const HEX_FOUR: SeparatorPolicy = SeparatorPolicy {
-    separator:  ' ',
+    separator:  " ",
     groups:     &[4],
     digits: ASCII_HEXADECIMAL,
 };
