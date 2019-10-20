@@ -6,10 +6,11 @@ pub struct SeparatorIterator<'a> {
     repeat_groups_remaining: usize,
     current_group_index:     usize,
     current_group_size:      usize,
+    len:                     usize,
 }
 
 impl<'a> SeparatorIterator<'a> {
-    pub fn new(policy: &'a SeparatorPolicy, ndigits: usize) -> Self {
+    pub fn new(policy: &'a SeparatorPolicy, len: usize) -> Self {
         let groups = &policy.groups;
 
         let mut sum = 0;
@@ -17,12 +18,13 @@ impl<'a> SeparatorIterator<'a> {
         for (index, &group) in groups.into_iter().enumerate() {
             sum += group as usize;
 
-            if ndigits <= sum {
+            if len <= sum {
                 return SeparatorIterator {
                     groups,
                     repeat_groups_remaining: 0,
                     current_group_index:     index,
-                    current_group_size:      ndigits - (sum - group as usize),
+                    current_group_size:      len - (sum - group as usize),
+                    len,
                 }
             }
         }
@@ -39,22 +41,22 @@ impl<'a> SeparatorIterator<'a> {
                 }
         };
 
-<<<<<<< HEAD
         let len_remaining = len - sum;
         let (repeat_groups_remaining, current_group_size)
                           = ceil_div_mod(len_remaining, repeat_group_len);
-=======
-        let digits_remaining = ndigits - sum;
-        let (repeat_groups_remaining, current_group_size)
-                             = ceil_div_mod(digits_remaining, repeat_group_len);
->>>>>>> Helper for precomputing where commas go works.
 
         SeparatorIterator {
             groups,
             repeat_groups_remaining,
             current_group_index: groups.len() - 1,
             current_group_size,
+            len,
         }
+    }
+
+    /// How many separators remain?
+    pub fn sep_len(&self) -> usize {
+        self.current_group_index + self.repeat_groups_remaining
     }
 }
 
@@ -80,6 +82,16 @@ impl<'a> Iterator for SeparatorIterator<'a> {
         self.current_group_size = self.groups[self.current_group_index] as usize;
         return Some(true);
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.len(), Some(self.len()))
+    }
+}
+
+impl<'a> ExactSizeIterator for SeparatorIterator<'a> {
+    fn len(&self) -> usize {
+        self.len
+    }
 }
 
 fn ceil_div_mod(n: usize, m: usize) -> (usize, usize) {
@@ -88,15 +100,20 @@ fn ceil_div_mod(n: usize, m: usize) -> (usize, usize) {
 }
 
 #[cfg(test)]
-mod test {
+mod test_common {
     use crate::*;
-    use super::*;
+    pub use super::*;
 
-    fn make_policy(groups: &[u8]) -> SeparatorPolicy {
+    pub fn make_policy(groups: &[u8]) -> SeparatorPolicy {
         let mut result = policies::COMMA_SEPARATOR;
         result.groups = groups;
         result
     }
+}
+
+#[cfg(test)]
+mod grouping_test {
+    use super::test_common::*;
 
     fn group_string(groups: &[u8], digits: &str) -> String {
         use std::iter::once;
