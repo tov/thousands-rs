@@ -5,7 +5,7 @@ use crate::{Separable, SeparatorPolicy};
 impl<T: Display> Separable for T {
     fn separate_by_policy(&self, policy: SeparatorPolicy) -> String {
         let original = self.to_string();
-        let (before, number, after) = find_span(&original, |c| policy.digits.contains(&c));
+        let (before, number, after, count) = find_span(&original, |c| policy.digits.contains(&c));
         let formatted = insert_separator_rev(number, policy.separator, policy.groups);
 
         let mut result = String::with_capacity(before.len() + formatted.len() + after.len());
@@ -40,22 +40,35 @@ fn insert_separator_rev(number: &str, sep: char, mut groups: &[u8]) -> String {
     buffer
 }
 
-fn find_span<F>(s: &str, is_digit: F) -> (&str, &str, &str) where F: Fn(char) -> bool {
-    let mut chars   = s.chars().enumerate().skip_while(|&(_, c)| !is_digit(c));
+fn find_span<F>(s: &str, is_digit: F) -> (&str, &str, &str, usize) where F: Fn(char) -> bool {
+    let number_start = match s.char_indices()
+        .find_map(|(i, c)|
+            if is_digit(c) {
+                Some(i)
+            } else {
+                None
+            }) {
 
-    let start       = if let Some((i, _)) = chars.next() {
-        i
-    } else {
-        return (s, "", "");
+        Some(len) => len,
+        None      => return (s, "", "", 0),
     };
 
-    let stop        = if let Some((i, _)) = chars.skip_while(|&(_, c)| is_digit(c)).next() {
-        i
-    } else {
-        s.len()
+    let mut count = 0;
+
+    let number_end = number_start + match s[number_start ..].char_indices()
+        .find_map(|(i, c)|
+            if is_digit(c) {
+                count += 1;
+                None
+            } else {
+                Some(i)
+            }) {
+
+        Some(len) => len,
+        None      => s.len() - number_start,
     };
 
-    (&s[.. start], &s[start .. stop], &s[stop ..])
+    (&s[.. number_start], &s[number_start .. number_end], &s[number_end ..], count)
 }
 
 #[cfg(test)]
