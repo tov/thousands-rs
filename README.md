@@ -47,7 +47,7 @@ It’s [on crates.io](https://crates.io/crates/thousands), so you can add
 
 ```toml
 [dependencies]
-thousands = "0.1.4"
+thousands = "0.2.0"
 ```
 
 to your `Cargo.toml`.
