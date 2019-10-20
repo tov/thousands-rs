@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog] and this project adheres to
 
 ### Changed
 - The separator is now a `&str` rather than a `char`.
+- Oldest supported rustc version is now 1.22.0.
 
 ### Added
 - A non-blanket `impl Separable for str` allocates only once, for the result,

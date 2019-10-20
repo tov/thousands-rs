@@ -1,4 +1,4 @@
-use crate::digits::*;
+use super::digits::*;
 
 /// A policy for inserting separators into numbers.
 ///

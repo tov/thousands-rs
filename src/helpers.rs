@@ -1,4 +1,4 @@
-use crate::SeparatorPolicy;
+use super::SeparatorPolicy;
 
 #[derive(Debug)]
 pub struct SeparatorIterator<'a> {
@@ -101,7 +101,7 @@ fn ceil_div_mod(n: usize, m: usize) -> (usize, usize) {
 
 #[cfg(test)]
 mod test_common {
-    use crate::*;
+    use super::super::*;
     pub use super::*;
 
     pub fn make_policy(groups: &[u8]) -> SeparatorPolicy {

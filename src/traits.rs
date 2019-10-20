@@ -1,4 +1,4 @@
-use crate::{SeparatorPolicy, policies};
+use super::{SeparatorPolicy, policies};
 
 /// Provides methods for formatting numbers with separators between the digits.
 pub trait Separable {

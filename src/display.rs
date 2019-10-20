@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
-use crate::{Separable, SeparatorPolicy};
-use crate::helpers::SeparatorIterator;
+use super::{Separable, SeparatorPolicy};
+use super::helpers::SeparatorIterator;
 
 impl Separable for str {
     fn separate_by_policy(&self, policy: SeparatorPolicy) -> String {
@@ -31,40 +31,42 @@ impl<T: Display> Separable for T {
     }
 }
 
-fn find_span<F>(s: &str, is_digit: F) -> (&str, &str, &str, usize) where F: Fn(char) -> bool {
-    let number_start = match s.char_indices()
-        .find_map(|(i, c)|
-            if is_digit(c) {
-                Some(i)
-            } else {
-                None
-            }) {
+fn find_span<F: Fn(char) -> bool>(s: &str, is_digit: F) -> (&str, &str, &str, usize) {
+    let start        = len_not_matching(s, &is_digit);
+    let (len, count) = len_and_count_matching(&s[start ..], &is_digit);
+    let limit        = start + len;
 
-        Some(len) => len,
-        None      => return (s, "", "", 0),
-    };
+    (&s[.. start], &s[start .. limit], &s[limit ..], count)
+}
+
+fn len_not_matching<F>(s: &str, mut pred: F) -> usize
+where F: FnMut(char) -> bool {
+
+    if let Some((i, _)) = s.char_indices().find(|p| pred(p.1)) {
+        i
+    } else {
+        s.len()
+    }
+}
+
+fn len_and_count_matching<F>(s: &str, pred: F) -> (usize, usize)
+where F: Fn(char) -> bool {
 
     let mut count = 0;
+    let     len = len_not_matching(s, |c|
+        if pred(c) {
+            count += 1;
+            false
+        } else {
+            true
+        });
 
-    let number_end = number_start + match s[number_start ..].char_indices()
-        .find_map(|(i, c)|
-            if is_digit(c) {
-                count += 1;
-                None
-            } else {
-                Some(i)
-            }) {
-
-        Some(len) => len,
-        None      => s.len() - number_start,
-    };
-
-    (&s[.. number_start], &s[number_start .. number_end], &s[number_end ..], count)
+    (len, count)
 }
 
 #[cfg(test)]
 mod test {
-    use crate::{Separable, SeparatorPolicy, digits, policies};
+    use super::super::{Separable, SeparatorPolicy, digits, policies};
 
     #[test]
     fn integer_thousands_commas() {

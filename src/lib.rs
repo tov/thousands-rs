@@ -46,7 +46,7 @@
 //!
 //! to your `Cargo.toml`.
 //!
-//! This crate supports Rust version 1.17 and newer.
+//! This crate supports Rust version 1.22 and newer.
 //!
 //! [`Separable`]: trait.Separable.html
 //! [`SeparatorPolicy`]: struct.SeparatorPolicy.html
