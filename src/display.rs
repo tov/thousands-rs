@@ -1,49 +1,28 @@
 use std::fmt::Display;
 
 use crate::{Separable, SeparatorPolicy};
+use crate::helpers::SeparatorIterator;
 
 impl Separable for str {
     fn separate_by_policy(&self, policy: SeparatorPolicy) -> String {
         let (before, number, after, count) = find_span(&self, |c| policy.digits.contains(&c));
-        let formatted = insert_separator_rev(number, policy.separator, policy.groups);
+        let iter = SeparatorIterator::new(&policy, count);
 
-        let mut result = String::with_capacity(before.len() + formatted.len() + after.len());
+        let mut result = String::with_capacity(self.len() + iter.sep_len());
 
         result.push_str(before);
-        result.extend(formatted.chars().rev());
-        result.push_str(after);
 
-        result
-    }
-}
-
-fn insert_separator_rev(number: &str, sep: char, mut groups: &[u8]) -> String {
-    // Does guessing the size like on the next line make sense?
-    let mut buffer  = String::with_capacity(2 * number.len());
-    let mut counter = 0;
-
-<<<<<<< HEAD
-    for c in number.chars().rev() {
-        if Some(&counter) == groups.get(0) {
-            buffer.push(sep);
-            counter = 0;
-
-            if groups.len() > 1 {
-                groups = &groups[1 ..];
-=======
         for (digit, comma_after) in number.chars().zip(iter) {
             result.push(digit);
             if comma_after {
                 result.push_str(policy.separator);
->>>>>>> 2d48dbd... Another UTF-8 fix; handling the empty groups case.
             }
         }
 
-        counter += 1;
-        buffer.push(c);
-    }
+        result.push_str(after);
 
-    buffer
+        result
+    }
 }
 
 impl<T: Display> Separable for T {
